@@ -529,6 +529,15 @@ html.webgl-work .work__progress { display: none; }
   html.has-cursor, html.has-cursor * { cursor: none !important; }
 }
 
+/* ── hero portrait (cut-out, blends into the page) ─────────────────────── */
+.hero__portrait { position: absolute; right: 0; bottom: 0; height: min(86vh, 940px); z-index: 1; pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 66%, transparent 97%);
+          mask-image: linear-gradient(to bottom, #000 66%, transparent 97%); }
+.hero__portrait img { height: 100%; width: auto; object-fit: contain; object-position: bottom right;
+  filter: grayscale(0.18) contrast(1.05) brightness(0.95); }
+.hero__portrait::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(102deg, var(--bg) 4%, rgba(10, 10, 12, 0.45) 30%, transparent 56%); }
+
 /* ── section rail ──────────────────────────────────────────────────────── */
 .rail { position: fixed; left: clamp(0.9rem, 2vw, 1.8rem); top: 50%; transform: translateY(-50%); z-index: 3; display: flex; flex-direction: column; gap: 1.1rem; }
 .rail__item { display: flex; align-items: center; gap: 0.7rem; color: var(--faint); transition: color 0.3s var(--ease); }
@@ -573,12 +582,14 @@ html.webgl-work .work__progress { display: none; }
 @media (max-width: 1024px) {
   .rail { display: none; }
   .approach__list { grid-template-columns: repeat(2, 1fr); }
+  .hero__portrait { height: 64vh; right: -8%; opacity: 0.5; }
   .about__grid { grid-template-columns: 1fr; }
   .idcard { max-width: 460px; }
 }
 @media (max-width: 768px) {
   .nav__links { display: none; }
   .nav__meta .nav__clock { display: none; }
+  .hero__portrait { height: 52vh; right: -14%; opacity: 0.3; }
   .hero__top { flex-direction: column; gap: 0.3rem; }
   .panel__title { font-size: clamp(2.2rem, 11vw, 3.4rem); }
   .exp__item { grid-template-columns: 1fr; gap: 0.8rem; }
