@@ -62,53 +62,73 @@
   }
 
   // ── procedural "dashboard" texture for a project ────────────────────────
-  function dashboardCanvas(p) {
+  function dashboardCanvas(p, idx) {
     const W = 1280, H = 720;
     const c = document.createElement("canvas"); c.width = W; c.height = H;
     const x = c.getContext("2d");
     const ACCENT = "#c9f24e", BONE = "#f2efe6", MUT = "rgba(242,239,230,0.5)";
 
-    x.fillStyle = "#0a0a0c"; x.fillRect(0, 0, W, H);
-    // grid
-    x.strokeStyle = "rgba(242,239,230,0.05)"; x.lineWidth = 1;
-    for (let gx = 60; gx < W; gx += 60) { x.beginPath(); x.moveTo(gx, 0); x.lineTo(gx, H); x.stroke(); }
-    for (let gy = 60; gy < H; gy += 60) { x.beginPath(); x.moveTo(0, gy); x.lineTo(W, gy); x.stroke(); }
-    // corner ticks
+    // background gradient
+    const bg = x.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, "#0c0c11"); bg.addColorStop(1, "#070709");
+    x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    // survey grid
+    x.strokeStyle = "rgba(242,239,230,0.045)"; x.lineWidth = 1;
+    for (let gx = 64; gx < W; gx += 64) { x.beginPath(); x.moveTo(gx, 0); x.lineTo(gx, H); x.stroke(); }
+    for (let gy = 64; gy < H; gy += 64) { x.beginPath(); x.moveTo(0, gy); x.lineTo(W, gy); x.stroke(); }
+    // accent glow behind the title
+    const gl = x.createRadialGradient(340, 320, 20, 340, 320, 460);
+    gl.addColorStop(0, "rgba(201,242,78,0.16)"); gl.addColorStop(1, "transparent");
+    x.fillStyle = gl; x.fillRect(0, 0, W, H);
+    // watermark numeral
+    x.fillStyle = "rgba(242,239,230,0.05)"; x.textAlign = "right"; x.textBaseline = "alphabetic";
+    x.font = "800 560px Syne, sans-serif"; x.fillText(p.num, W - 28, H + 84);
+    // corner frame
     x.strokeStyle = ACCENT; x.lineWidth = 3;
-    const m = 40, t = 26;
+    const m = 40, t = 28;
     [[m, m, 1, 1], [W - m, m, -1, 1], [m, H - m, 1, -1], [W - m, H - m, -1, -1]].forEach(([px, py, dx, dy]) => {
       x.beginPath(); x.moveTo(px, py); x.lineTo(px + dx * t, py); x.moveTo(px, py); x.lineTo(px, py + dy * t); x.stroke();
     });
-    // watermark number
-    x.fillStyle = "rgba(242,239,230,0.04)";
-    x.font = "800 520px Syne, sans-serif"; x.textAlign = "right"; x.textBaseline = "alphabetic";
-    x.fillText(p.num, W - 40, H + 60);
-    // top bar
-    x.textAlign = "left"; x.textBaseline = "middle";
-    x.fillStyle = ACCENT; x.beginPath(); x.arc(64, 70, 7, 0, Math.PI * 2); x.fill();
-    x.fillStyle = MUT; x.font = "500 22px 'JetBrains Mono', monospace";
-    x.fillText("LIVE · " + (p.sub || "").toUpperCase(), 84, 72);
+    // telemetry top bar
+    x.textBaseline = "middle"; x.textAlign = "left";
+    x.fillStyle = ACCENT; x.beginPath(); x.arc(62, 70, 7, 0, Math.PI * 2); x.fill();
+    x.fillStyle = MUT; x.font = "500 21px 'JetBrains Mono', monospace";
+    x.fillText("SECURE  //  " + (p.sub || "").toUpperCase(), 84, 72);
     x.textAlign = "right"; x.fillStyle = BONE;
-    x.fillText(p.num + " / " + String(projects.length).padStart(2, "0"), W - 60, 72);
-    // title (wrap)
-    x.textAlign = "left"; x.fillStyle = BONE; x.font = "800 96px Syne, sans-serif";
-    wrap(x, p.title.toUpperCase(), 64, 250, 740, 92);
-    // highlight metric
-    x.fillStyle = ACCENT; x.font = "500 34px 'JetBrains Mono', monospace";
-    x.fillText(p.highlight, 66, 470);
-    // faux signal chart
+    x.fillText(p.num + " / " + String(projects.length).padStart(2, "0"), W - 58, 72);
+    x.strokeStyle = "rgba(242,239,230,0.12)"; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(60, 108); x.lineTo(W - 58, 108); x.stroke();
+    // title
+    x.textAlign = "left"; x.textBaseline = "alphabetic"; x.fillStyle = BONE;
+    x.font = "800 100px Syne, sans-serif";
+    wrap(x, p.title.toUpperCase(), 60, 256, 770, 92);
+    // highlight metric pill
+    x.font = "500 30px 'JetBrains Mono', monospace"; x.textBaseline = "middle";
+    const hw = x.measureText(p.highlight).width;
+    x.fillStyle = "rgba(201,242,78,0.12)"; roundRect(x, 60, 452, hw + 46, 52, 9); x.fill();
+    x.fillStyle = ACCENT; x.fillText(p.highlight, 83, 480);
+    // signal chart
+    let seed = idx * 17 + 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
     x.strokeStyle = ACCENT; x.lineWidth = 3; x.beginPath();
-    const cx0 = 760, cw = 440, cy0 = 300, ch = 150;
-    for (let i = 0; i <= 40; i++) {
-      const xx = cx0 + (cw * i) / 40;
-      const yy = cy0 + ch / 2 - Math.sin(i * 0.5 + p.num.length) * (ch / 2) * (0.4 + 0.6 * Math.random());
+    const cx0 = 740, cw = 470, cy0 = 250, ch = 180;
+    for (let i = 0; i <= 48; i++) {
+      const xx = cx0 + (cw * i) / 48;
+      const yy = cy0 + ch / 2 - Math.sin(i * 0.45 + idx) * (ch / 2) * (0.35 + 0.65 * rnd());
       i ? x.lineTo(xx, yy) : x.moveTo(xx, yy);
     }
-    x.globalAlpha = 0.85; x.stroke(); x.globalAlpha = 1;
+    x.globalAlpha = 0.9; x.stroke(); x.globalAlpha = 1;
+    x.fillStyle = "rgba(242,239,230,0.22)";
+    for (let i = 0; i <= 8; i++) { x.beginPath(); x.arc(cx0 + (cw * i) / 8, cy0 + ch + 34, 2.5, 0, 6.283); x.fill(); }
     // tags
-    x.fillStyle = MUT; x.font = "500 24px 'JetBrains Mono', monospace";
-    x.fillText(p.tags.slice(0, 4).join("   ·   "), 64, H - 64);
+    x.fillStyle = MUT; x.textAlign = "left"; x.textBaseline = "alphabetic";
+    x.font = "500 23px 'JetBrains Mono', monospace";
+    x.fillText(p.tags.slice(0, 4).join("   ·   "), 60, H - 56);
     return c;
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
   function wrap(ctx, text, x0, y0, maxW, lh) {
     const words = text.split(" "); let line = "", y = y0;
@@ -178,10 +198,10 @@
     // screens
     const geo = curved(7.2, 4.05, 7.2);
     const group = new THREE.Group(); scene.add(group);
-    const screens = projects.map((p) => {
+    const screens = projects.map((p, idx) => {
       let map = null;
       try {
-        map = new THREE.CanvasTexture(dashboardCanvas(p));
+        map = new THREE.CanvasTexture(dashboardCanvas(p, idx));
         map.colorSpace = THREE.SRGBColorSpace;
         map.anisotropy = renderer.capabilities.getMaxAnisotropy?.() || 1;
       } catch (_) {}
@@ -215,9 +235,9 @@
         ]);
       composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
-      const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.5, 0.55);
+      const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.72, 0.55, 0.5);
       composer.addPass(bloom);
-      const rgb = new ShaderPass(RGBShiftShader); rgb.uniforms.amount.value = 0.0016; composer.addPass(rgb);
+      const rgb = new ShaderPass(RGBShiftShader); rgb.uniforms.amount.value = 0.0014; composer.addPass(rgb);
       composer.addPass(new OutputPass());
       composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       composer.setSize(innerWidth, innerHeight);
