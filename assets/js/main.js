@@ -385,7 +385,7 @@
   /* ── cursor spotlight on cards & buttons ────────────────────────────── */
   function initSpotlight() {
     if (!fine) return;
-    $$(".skills__cell, .idcard, .contact__copy, .footer__top").forEach((el) => {
+    $$(".skills__cell, .idcard, .contact__copy, .footer__top, .archive__row a").forEach((el) => {
       el.setAttribute("data-spotlight", "");
       el.addEventListener("mousemove", (e) => {
         const r = el.getBoundingClientRect();
