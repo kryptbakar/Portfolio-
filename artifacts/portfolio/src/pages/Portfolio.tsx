@@ -1,109 +1,85 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Github, Linkedin, Mail, ArrowDown, Shield, ExternalLink, MapPin, GraduationCap } from "lucide-react";
+import Lenis from "lenis";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// ─── Real data from Muhammad Abubakar's CV ───────────────────────────────────
+// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const PROJECTS = [
   {
     id: "01",
     slug: "devsecops-pipeline",
-    title: "Secure DevSecOps CI/CD Pipeline",
-    category: "AppSec Automation",
-    description:
-      "Enforced fail-fast security gates in GitHub Actions — blocking any push containing secrets, SQLi patterns, or vulnerable dependencies. Packaged as a reusable template so downstream repos inherit the same security posture with zero per-project setup.",
-    tags: ["GitHub Actions", "Bandit SAST", "pip-audit SCA", "pytest", "Python"],
-    accent: "#00ff88",
+    title: "Secure DevSecOps Pipeline",
+    category: "AppSec · GitHub Actions",
+    tags: ["SAST", "SCA", "CI/CD"],
+    year: "2025",
+    description: "Fail-fast security gates blocking secrets, SQLi, and vulnerable deps — packaged as a reusable template.",
   },
   {
     id: "02",
     slug: "phantom-identity",
     title: "Phantom Identity",
-    category: "Browser Fingerprint Privacy Extension",
-    description:
-      "Manifest V3 extension defeating passive fingerprint tracking by spoofing Canvas, WebGL, Navigator, Screen, and timezone attributes per session. Surfaces fingerprint entropy and spoof effectiveness in an in-extension dashboard — zero outbound telemetry.",
-    tags: ["JavaScript", "Manifest V3", "WebGL API", "Canvas API"],
-    accent: "#00d4ff",
+    category: "Privacy · Browser Extension",
+    tags: ["Manifest V3", "WebGL", "Canvas"],
+    year: "2025",
+    description: "Defeats passive fingerprint tracking by spoofing Canvas, WebGL, Navigator, Screen and timezone per session.",
   },
   {
     id: "03",
     slug: "bakri-pay",
     title: "Bakri Pay",
-    category: "Secure Banking Application",
-    description:
-      "Full-stack Flask banking app with secure session auth, transaction handling, and rules-based fraud detection on suspicious transfers. Controls mapped to OWASP Top 10 — bcrypt/Argon2 hashing, CSRF tokens, parameterized queries — validated via Burp Suite assessment.",
-    tags: ["Flask", "Python", "OWASP Top 10", "Burp Suite", "PostgreSQL"],
-    accent: "#00ff88",
+    category: "AppSec · Flask",
+    tags: ["OWASP", "Burp Suite", "bcrypt"],
+    year: "2024",
+    description: "Full-stack banking app with fraud detection, CSRF tokens, and parameterized queries. Validated via Burp Suite.",
   },
   {
     id: "04",
     slug: "dqn-noise",
     title: "DQN Adaptive Noise Allocation",
-    category: "Wireless Security · Reinforcement Learning",
-    description:
-      "Modeled an eavesdropper-present MISO wiretap channel with MRT beamforming and trained a DQN agent to adaptively split power between signal and jamming noise. Achieved +0.299 bits/s/Hz secrecy gain over fixed allocation at low SNR.",
-    tags: ["Python", "TensorFlow", "DQN", "Rayleigh Fading", "MISO"],
-    accent: "#bf00ff",
+    category: "Wireless Security · RL",
+    tags: ["TensorFlow", "DQN", "MISO"],
+    year: "2024",
+    description: "+0.299 bits/s/Hz secrecy gain over fixed allocation — DQN trained on a MISO wiretap channel.",
   },
   {
     id: "05",
     slug: "ai-ids",
     title: "AI Intrusion Detection System",
     category: "ML · Cybersecurity",
-    description:
-      "Hybrid CatBoost + LOF detector pairing supervised classification with unsupervised novelty detection to catch unseen attacks. Trained on 1.6M samples in ~7.5 min — catches zero-day patterns that pure supervised models miss.",
-    tags: ["CatBoost", "scikit-learn", "LOF", "Python", "Pandas"],
-    accent: "#ff6b35",
+    tags: ["CatBoost", "LOF", "1.6M samples"],
+    year: "2024",
+    description: "Hybrid supervised + novelty detection catches zero-day patterns in 7.5 min on 1.6M records.",
   },
 ];
 
-const SKILL_CATEGORIES = [
-  {
-    label: "security",
-    items: ["Application Security", "DevSecOps", "Penetration Testing", "OWASP Top 10", "Threat Modeling", "SAST / SCA", "Vulnerability Assessment"],
-  },
-  {
-    label: "tools",
-    items: ["Burp Suite", "Nmap", "Metasploit", "Wireshark", "Bandit", "GitHub Actions", "Kali Linux"],
-  },
-  {
-    label: "programming",
-    items: ["Python", "JavaScript", "C++", "SQL", "Bash"],
-  },
-  {
-    label: "frameworks",
-    items: ["Flask", "React", "REST APIs", "NIST CSF", "ISO 27001", "Secure SDLC"],
-  },
-  {
-    label: "ml / data",
-    items: ["TensorFlow", "CatBoost", "scikit-learn", "Pandas", "PostgreSQL"],
-  },
+const SKILLS = [
+  { label: "Security", items: ["Application Security", "Penetration Testing", "OWASP Top 10", "Threat Modeling", "SAST / SCA", "DevSecOps"] },
+  { label: "Tools", items: ["Burp Suite", "Nmap", "Metasploit", "Wireshark", "Bandit", "GitHub Actions"] },
+  { label: "Programming", items: ["Python", "JavaScript", "C++", "SQL", "Bash"] },
+  { label: "Frameworks", items: ["Flask", "React", "NIST CSF", "ISO 27001", "Secure SDLC"] },
+  { label: "ML / Data", items: ["TensorFlow", "CatBoost", "scikit-learn", "Pandas", "PostgreSQL"] },
 ];
 
 const EXPERIENCE = [
   {
     role: "Software QA Intern — Security Testing",
     company: "Thingtrax",
-    location: "Lahore, Pakistan",
-    period: "Jun 2025 – Aug 2025",
+    period: "Jun – Aug 2025",
     bullets: [
-      "Designed and ran security-focused test cases across 4 production releases — auth-flow validation, input fuzzing, and dependency-vulnerability checks.",
-      "Triaged defects with developers and enforced the team's secure-coding bar.",
-      "Contributed to a digitization workflow that cut document retrieval from ~15 min to under 5 sec.",
+      "Security-focused test cases across 4 production releases — auth-flow validation, input fuzzing, dependency-vulnerability checks.",
+      "Digitization workflow cutting document retrieval from ~15 min to under 5 sec.",
     ],
   },
   {
     role: "Secure Software Developer Intern",
     company: "Thingtrax",
-    location: "Lahore, Pakistan",
-    period: "Jun 2024 – Aug 2024",
+    period: "Jun – Aug 2024",
     bullets: [
-      "Built core flows (auth, catalog, checkout) for an industry-sponsored e-commerce platform using input validation and parameterized queries.",
-      "Coordinated weekly agile syncs for a 10-person team.",
-      "Shipped 50+ UI screens informed by research on 200+ users, improving delivery cadence ~15%.",
+      "Built auth, catalog, checkout flows for an industry e-commerce platform with input validation and parameterized queries.",
+      "Shipped 50+ UI screens informed by 200+ user interviews; improved delivery cadence ~15%.",
     ],
   },
 ];
@@ -116,643 +92,755 @@ const CERTS = [
   "Cisco Intro to Cybersecurity",
 ];
 
-const STATS = [
-  { value: "3.3", label: "GPA / 4.00" },
-  { value: "2×", label: "Dean's Honor List" },
-  { value: "5", label: "Security Projects" },
-  { value: "1.6M", label: "Training Samples" },
+const SECTIONS = [
+  { id: "hero",       label: "INTRO"    },
+  { id: "about",      label: "ABOUT"    },
+  { id: "projects",   label: "PROJECTS" },
+  { id: "experience", label: "EXP"      },
+  { id: "skills",     label: "SKILLS"   },
+  { id: "contact",    label: "CONTACT"  },
 ];
 
-// ─── Matrix rain canvas ────────────────────────────────────────────────────
+// ─── Text scramble ────────────────────────────────────────────────────────────
 
-function useMatrixRain(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&";
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+function scramble(el: HTMLElement, text: string, durationMs = 500) {
+  let frame = 0;
+  const totalFrames = Math.floor(durationMs / 28);
+  let id: ReturnType<typeof setInterval>;
 
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
+  id = setInterval(() => {
+    el.textContent = text
+      .split("")
+      .map((char, i) => {
+        if (char === " ") return " ";
+        if (i < (frame / totalFrames) * text.length) return char;
+        return CHARS[Math.floor(Math.random() * CHARS.length)];
+      })
+      .join("");
+    frame++;
+    if (frame > totalFrames) {
+      el.textContent = text;
+      clearInterval(id);
+    }
+  }, 28);
 
-    const CHARS = "01アイウエオカキクケコサシスセソ{}[]<>/\\|!@#$%ABCDEFabcdef0123456789";
-    const FONT_SIZE = 13;
-    let columns = Math.floor(canvas.width / FONT_SIZE);
-    let drops: number[] = new Array(columns).fill(1);
-
-    const draw = () => {
-      ctx.fillStyle = "rgba(2, 10, 6, 0.06)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      for (let i = 0; i < drops.length; i++) {
-        // Vary brightness for depth
-        const bright = Math.random() > 0.9;
-        ctx.fillStyle = bright ? "#88ffb8" : "#00aa44";
-        ctx.font = `${FONT_SIZE}px JetBrains Mono, monospace`;
-        const char = CHARS[Math.floor(Math.random() * CHARS.length)];
-        ctx.fillText(char, i * FONT_SIZE, drops[i] * FONT_SIZE);
-
-        if (drops[i] * FONT_SIZE > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
-        drops[i]++;
-      }
-
-      // Recompute columns on resize
-      columns = Math.floor(canvas.width / FONT_SIZE);
-      if (drops.length !== columns) {
-        drops = new Array(columns).fill(1);
-      }
-    };
-
-    const interval = setInterval(draw, 55);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("resize", resize);
-    };
-  }, [canvasRef]);
+  return () => clearInterval(id);
 }
 
-// ─── Glitch effect on name ─────────────────────────────────────────────────
+function ScrambleLink({
+  href,
+  children,
+  className,
+  target,
+  rel,
+}: {
+  href: string;
+  children: string;
+  className?: string;
+  target?: string;
+  rel?: string;
+}) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  const cancelRef = useRef<(() => void) | null>(null);
 
-function useGlitch(elementRef: React.RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const el = elementRef.current;
-    if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const onEnter = useCallback(() => {
+    if (ref.current) {
+      cancelRef.current?.();
+      cancelRef.current = scramble(ref.current, children, 420);
+    }
+  }, [children]);
 
-    const glitch = () => {
-      el.classList.add("glitching");
-      setTimeout(() => el.classList.remove("glitching"), 350);
-    };
+  const onLeave = useCallback(() => {
+    cancelRef.current?.();
+    if (ref.current) ref.current.textContent = children;
+  }, [children]);
 
-    // Random glitch intervals
-    const scheduleGlitch = () => {
-      const delay = 3000 + Math.random() * 5000;
-      return setTimeout(() => {
-        glitch();
-        timer = scheduleGlitch();
-      }, delay);
-    };
-
-    let timer = scheduleGlitch();
-    return () => clearTimeout(timer);
-  }, [elementRef]);
+  return (
+    <a
+      ref={ref}
+      href={href}
+      className={className}
+      target={target}
+      rel={rel}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      {children}
+    </a>
+  );
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────
+// ─── Loading screen ───────────────────────────────────────────────────────────
+
+function LoadingScreen({ onDone }: { onDone: () => void }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let prog = 0;
+    const tick = setInterval(() => {
+      prog += Math.random() * 12 + 4;
+      if (prog >= 100) {
+        prog = 100;
+        clearInterval(tick);
+        if (fillRef.current) fillRef.current.style.width = "100%";
+        setTimeout(() => {
+          gsap.to(overlayRef.current, {
+            yPercent: -100,
+            duration: 1.1,
+            ease: "power4.inOut",
+            onComplete: onDone,
+          });
+        }, 350);
+      }
+      if (fillRef.current) fillRef.current.style.width = prog + "%";
+    }, 60);
+    return () => clearInterval(tick);
+  }, [onDone]);
+
+  return (
+    <div ref={overlayRef} className="loading-overlay">
+      <div style={{ textAlign: "center" }}>
+        <div
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            fontWeight: 800,
+            fontSize: "clamp(2rem, 6vw, 4.5rem)",
+            letterSpacing: "-0.04em",
+            color: "#fff",
+            lineHeight: 0.9,
+            marginBottom: "2rem",
+          }}
+        >
+          M.
+          <br />
+          ABUBAKAR
+        </div>
+        <div className="loading-bar-track">
+          <div ref={fillRef} className="loading-bar-fill" />
+        </div>
+        <div className="loading-text" style={{ marginTop: "1rem" }}>
+          Initializing
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Portfolio() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const nameRef = useRef<HTMLHeadingElement>(null);
-  const statsRef = useRef<HTMLDivElement>(null);
-  const cursorRef = useRef<HTMLDivElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [activeSection, setActiveSection] = useState("hero");
+  const cursorRingRef = useRef<HTMLDivElement>(null);
   const cursorDotRef = useRef<HTMLDivElement>(null);
 
-  useMatrixRain(canvasRef);
-  useGlitch(nameRef);
-
-  // ── Custom cursor ──────────────────────────────────────────────────────
+  // Lenis smooth scroll
   useEffect(() => {
-    const cursor = cursorRef.current;
+    if (!loaded) return;
+    const lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
+    lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add((time) => lenis.raf(time * 1000));
+    gsap.ticker.lagSmoothing(0);
+    return () => {
+      lenis.destroy();
+    };
+  }, [loaded]);
+
+  // Intersection observer for side indicator
+  useEffect(() => {
+    if (!loaded) return;
+    const observers: IntersectionObserver[] = [];
+    SECTIONS.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) setActiveSection(id);
+        },
+        { threshold: 0.4 }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [loaded]);
+
+  // Custom cursor
+  useEffect(() => {
+    if (!loaded) return;
+    const ring = cursorRingRef.current;
     const dot = cursorDotRef.current;
-    if (!cursor || !dot) return;
+    if (!ring || !dot) return;
+    if (window.matchMedia("(max-width: 768px)").matches) return;
 
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
-    if (isMobile) return;
-
-    const xTo = gsap.quickTo(cursor, "x", { duration: 0.35, ease: "power3" });
-    const yTo = gsap.quickTo(cursor, "y", { duration: 0.35, ease: "power3" });
-    const xDot = gsap.quickTo(dot, "x", { duration: 0.08, ease: "none" });
-    const yDot = gsap.quickTo(dot, "y", { duration: 0.08, ease: "none" });
+    const xRing = gsap.quickTo(ring, "x", { duration: 0.4, ease: "power3" });
+    const yRing = gsap.quickTo(ring, "y", { duration: 0.4, ease: "power3" });
+    const xDot  = gsap.quickTo(dot,  "x", { duration: 0.06, ease: "none" });
+    const yDot  = gsap.quickTo(dot,  "y", { duration: 0.06, ease: "none" });
 
     const onMove = (e: MouseEvent) => {
-      xTo(e.clientX);
-      yTo(e.clientY);
-      xDot(e.clientX);
-      yDot(e.clientY);
+      xRing(e.clientX); yRing(e.clientY);
+      xDot(e.clientX);  yDot(e.clientY);
     };
-
-    const onEnter = () => {
-      gsap.to(cursor, { scale: 2.5, duration: 0.3, ease: "power2.out" });
-      gsap.to(cursor, { borderColor: "#00ff88", duration: 0.2 });
-    };
-    const onLeave = () => {
-      gsap.to(cursor, { scale: 1, duration: 0.3, ease: "power2.out" });
-      gsap.to(cursor, { borderColor: "rgba(0,255,136,0.5)", duration: 0.2 });
-    };
-    const onDown = () => gsap.to(cursor, { scale: 0.7, duration: 0.1 });
-    const onUp = () => gsap.to(cursor, { scale: 1, duration: 0.1 });
-
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("mouseup", onUp);
 
-    const interactive = document.querySelectorAll("a, button, .project-card, .skill-tag");
-    interactive.forEach((el) => {
-      el.addEventListener("mouseenter", onEnter);
-      el.addEventListener("mouseleave", onLeave);
+    const interactives = document.querySelectorAll("a, button, .work-row, .skill-category-cell");
+    interactives.forEach((el) => {
+      el.addEventListener("mouseenter", () => ring.classList.add("hovering"));
+      el.addEventListener("mouseleave", () => ring.classList.remove("hovering"));
     });
 
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, []);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, [loaded]);
 
-  // ── Hero reveal + pin ──────────────────────────────────────────────────
+  // GSAP scroll animations
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!loaded) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // Staggered character reveal on load
-    const name = nameRef.current;
-    if (name) {
-      const words = name.querySelectorAll(".word");
-      gsap.fromTo(
-        words,
-        { yPercent: 110, opacity: 0 },
-        { yPercent: 0, opacity: 1, stagger: 0.12, duration: 1.1, ease: "power4.out", delay: 0.3 }
-      );
-    }
+    // Hero name reveal
+    gsap.fromTo(
+      ".hero-name-word",
+      { yPercent: 110 },
+      { yPercent: 0, stagger: 0.1, duration: 1.2, ease: "power4.out", delay: 0.2 }
+    );
+    gsap.fromTo(
+      [".hero-scroll-label", ".hero-year"],
+      { opacity: 0 },
+      { opacity: 1, stagger: 0.15, duration: 1, ease: "power2.out", delay: 1.0 }
+    );
 
-    // Tagline + prompt reveal
-    gsap.fromTo(".hero-sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, delay: 0.9, ease: "power3.out" });
-    gsap.fromTo(".hero-prompt", { opacity: 0 }, { opacity: 1, duration: 0.5, delay: 1.4 });
-    gsap.fromTo(".scroll-cue", { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.5, delay: 1.8 });
+    if (reduced) return;
 
-    // Pin hero: scale out name, reveal stats strip
-    const heroTl = gsap.timeline({
-      scrollTrigger: {
-        trigger: heroRef.current,
-        start: "top top",
-        end: "+=120%",
-        scrub: 1.5,
-        pin: true,
-      },
+    // Ghost text parallax
+    gsap.to(".hero-ghost-text", {
+      yPercent: 30,
+      ease: "none",
+      scrollTrigger: { trigger: "#hero", start: "top top", end: "bottom top", scrub: 1.5 },
     });
 
-    heroTl
-      .to(name, { scale: 1.06, opacity: 0.15, duration: 1 }, 0)
-      .fromTo(statsRef.current, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1 }, 0.2);
-
-    // About section
+    // Mission lines reveal
     gsap.fromTo(
-      ".about-block",
-      { opacity: 0, y: 60 },
+      ".mission-line",
+      { yPercent: 100 },
       {
-        opacity: 1, y: 0, stagger: 0.15, duration: 0.9, ease: "power3.out",
-        scrollTrigger: { trigger: "#about", start: "top 75%" },
+        yPercent: 0, stagger: 0.09, duration: 1.0, ease: "power3.out",
+        scrollTrigger: { trigger: "#about", start: "top 65%" },
+      }
+    );
+    gsap.fromTo(
+      ".about-body",
+      { opacity: 0, y: 24 },
+      {
+        opacity: 1, y: 0, duration: 0.9, ease: "power2.out",
+        scrollTrigger: { trigger: "#about", start: "top 60%" },
       }
     );
 
-    // Experience timeline items
+    // Work rows
     gsap.fromTo(
-      ".exp-item",
-      { opacity: 0, x: -40 },
+      ".work-row",
+      { opacity: 0, x: -20 },
       {
-        opacity: 1, x: 0, stagger: 0.2, duration: 0.8, ease: "power3.out",
-        scrollTrigger: { trigger: "#experience", start: "top 75%" },
+        opacity: 1, x: 0, stagger: 0.08, duration: 0.7, ease: "power3.out",
+        scrollTrigger: { trigger: "#projects", start: "top 72%" },
       }
     );
 
-    // Project cards
+    // Experience cards
     gsap.fromTo(
-      ".project-card",
-      { opacity: 0, y: 50 },
+      ".exp-card",
+      { opacity: 0, y: 32 },
       {
-        opacity: 1, y: 0, stagger: 0.12, duration: 0.8, ease: "power3.out",
-        scrollTrigger: { trigger: "#projects", start: "top 70%" },
+        opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: "power3.out",
+        scrollTrigger: { trigger: "#experience", start: "top 72%" },
       }
     );
 
-    // Skills categories
+    // Skill cells
     gsap.fromTo(
-      ".skill-category",
-      { opacity: 0, y: 30 },
+      ".skill-category-cell",
+      { opacity: 0, y: 20 },
       {
-        opacity: 1, y: 0, stagger: 0.1, duration: 0.7, ease: "power2.out",
-        scrollTrigger: { trigger: "#skills", start: "top 75%" },
+        opacity: 1, y: 0, stagger: 0.07, duration: 0.6, ease: "power2.out",
+        scrollTrigger: { trigger: "#skills", start: "top 72%" },
+      }
+    );
+
+    // Vision
+    gsap.fromTo(
+      ".vision-text",
+      { opacity: 0, y: 40 },
+      {
+        opacity: 1, y: 0, duration: 1.0, ease: "power3.out",
+        scrollTrigger: { trigger: "#vision", start: "top 70%" },
       }
     );
 
     // Contact
     gsap.fromTo(
       ".contact-piece",
-      { opacity: 0, y: 40 },
+      { opacity: 0, y: 30 },
       {
-        opacity: 1, y: 0, stagger: 0.15, duration: 0.9, ease: "power3.out",
-        scrollTrigger: { trigger: "#contact", start: "top 75%" },
+        opacity: 1, y: 0, stagger: 0.12, duration: 0.9, ease: "power3.out",
+        scrollTrigger: { trigger: "#contact", start: "top 72%" },
       }
     );
 
     return () => ScrollTrigger.getAll().forEach((t) => t.kill());
-  }, []);
+  }, [loaded]);
 
   return (
-    <div className="relative bg-background text-foreground min-h-screen font-sans overflow-x-hidden selection:bg-primary selection:text-primary-foreground">
+    <>
+      {/* Loading screen */}
+      {!loaded && <LoadingScreen onDone={() => setLoaded(true)} />}
 
-      {/* ── Custom cursor (desktop only) ──────────────────────────────────── */}
-      <div
-        ref={cursorRef}
-        className="hidden md:block fixed top-0 left-0 w-8 h-8 rounded-full border border-primary/50 pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2"
-        style={{ willChange: "transform" }}
-      />
-      <div
-        ref={cursorDotRef}
-        className="hidden md:block fixed top-0 left-0 w-1.5 h-1.5 rounded-full bg-primary pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2"
-        style={{ willChange: "transform" }}
-      />
+      {/* Custom cursor — desktop only */}
+      <div ref={cursorRingRef} className="cursor-ring hidden md:block" />
+      <div ref={cursorDotRef}  className="cursor-dot  hidden md:block" />
 
-      {/* ── Top nav ───────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-5"
-        style={{ background: "linear-gradient(to bottom, hsl(150 60% 3% / 0.95), transparent)" }}>
-        <span className="font-mono text-xs text-primary tracking-widest">
-          <span className="text-muted-foreground">~/</span>abubakar.sec
-          <span className="cursor-blink text-primary ml-0.5">_</span>
-        </span>
-        <div className="hidden md:flex gap-8 font-mono text-xs tracking-widest text-muted-foreground">
-          {["about", "experience", "projects", "skills", "contact"].map((s) => (
-            <a key={s} href={`#${s}`} className="hover:text-primary transition-colors duration-200">
-              {`// ${s}`}
-            </a>
-          ))}
-        </div>
+      {/* Side scroll indicator */}
+      <nav className="scroll-indicator hidden md:flex" aria-label="Section indicator">
+        {SECTIONS.map(({ id, label }) => (
+          <a key={id} href={`#${id}`} className={`scroll-indicator-item ${activeSection === id ? "active" : ""}`}
+             style={{ textDecoration: "none" }}>
+            <div className="scroll-indicator-line" />
+            <div className="scroll-indicator-label">{label}</div>
+          </a>
+        ))}
       </nav>
 
+      {/* Nav */}
+      <header className="site-nav">
+        <a href="#hero" className="nav-logo" style={{ color: "#fff", textDecoration: "none" }}>
+          M. Abubakar
+        </a>
+        <div className="nav-links">
+          {["about", "projects", "skills", "contact"].map((s) => (
+            <ScrambleLink key={s} href={`#${s}`} className="nav-link">
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </ScrambleLink>
+          ))}
+        </div>
+        <ScrambleLink
+          href="mailto:abubakaramirwork@gmail.com"
+          className="nav-contact"
+        >
+          Contact →
+        </ScrambleLink>
+      </header>
+
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
-      <section ref={heroRef} id="hero" className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden">
-
-        {/* Matrix rain background */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full opacity-15 pointer-events-none"
-        />
-
-        {/* Scanline overlay */}
-        <div className="scanline-overlay absolute inset-0 pointer-events-none" />
-
-        {/* Vignette */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse at center, transparent 30%, hsl(150 60% 3% / 0.8) 100%)" }} />
-
-        {/* Hero content */}
-        <div className="relative z-10 text-center px-4 w-full max-w-7xl mx-auto">
-          {/* Prompt line */}
-          <p className="hero-prompt font-mono text-xs md:text-sm text-primary mb-6 md:mb-8 tracking-widest opacity-0">
-            <span className="text-muted-foreground">$</span> whoami
-          </p>
-
-          {/* Name with word-by-word reveal */}
-          <h1
-            ref={nameRef}
-            data-text="MUHAMMAD ABUBAKAR"
-            className="glitch-name font-sans font-bold uppercase leading-[0.9] tracking-tight mb-6 md:mb-8"
-            style={{ fontSize: "clamp(3.5rem, 12vw, 11rem)" }}
+      <section id="hero" className="hero-section">
+        {/* Ghost outline name floating behind */}
+        <div className="hero-name-ghost">
+          <span
+            className="hero-ghost-text"
+            style={{ fontSize: "clamp(8rem, 22vw, 28rem)" }}
           >
-            <span className="overflow-hidden inline-block">
-              <span className="word inline-block">MUHAMMAD</span>
-            </span>
-            <br />
-            <span className="overflow-hidden inline-block gradient-text">
-              <span className="word inline-block">ABUBAKAR</span>
-            </span>
-          </h1>
+            SECURITY
+          </span>
+        </div>
 
-          {/* Tagline */}
-          <div className="hero-sub opacity-0 space-y-2">
-            <p className="font-mono text-base md:text-xl text-muted-foreground tracking-wide">
-              Cyber Security Engineer
-              <span className="text-primary mx-2">·</span>
-              DevSecOps
-              <span className="text-primary mx-2">·</span>
-              Application Security
-            </p>
-            <p className="font-mono text-xs md:text-sm text-muted-foreground/60 flex items-center justify-center gap-2">
-              <MapPin size={12} className="text-primary" />
-              Lahore, Pakistan
-              <span className="text-primary mx-1">·</span>
-              <GraduationCap size={12} className="text-primary" />
-              GIKI · BSc Cyber Security · 3.3 GPA
-            </p>
-          </div>
+        {/* Main name */}
+        <div className="hero-name-main">
+          <span className="hero-name-line">
+            <span
+              className="hero-name-word"
+              style={{ fontSize: "clamp(4.5rem, 13vw, 15rem)" }}
+            >
+              MUHAMMAD
+            </span>
+          </span>
+          <span className="hero-name-line">
+            <span
+              className="hero-name-word"
+              style={{
+                fontSize: "clamp(4.5rem, 13vw, 15rem)",
+                color: "transparent",
+                WebkitTextStroke: "2px #fff",
+              }}
+            >
+              ABUBAKAR
+            </span>
+          </span>
 
-          {/* Stats strip — fades in on scroll via GSAP */}
+          {/* Subtitle row */}
           <div
-            ref={statsRef}
-            className="mt-12 md:mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 max-w-2xl mx-auto opacity-0"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "1.5rem",
+              marginTop: "2.5rem",
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: "0.65rem",
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.35)",
+            }}
           >
-            {STATS.map((s) => (
-              <div key={s.label} className="text-center border border-primary/20 rounded px-4 py-3">
-                <div className="font-mono font-bold text-2xl md:text-3xl text-primary text-glow">{s.value}</div>
-                <div className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase mt-1">{s.label}</div>
-              </div>
-            ))}
+            <span>Cyber Security Engineer</span>
+            <span style={{ width: 30, height: 1, background: "rgba(255,255,255,0.2)" }} />
+            <span>GIKI · Lahore</span>
+            <span style={{ width: 30, height: 1, background: "rgba(255,255,255,0.2)" }} />
+            <span>BSc 2023 – 2027</span>
           </div>
         </div>
 
-        {/* Scroll cue */}
-        <div className="scroll-cue opacity-0 absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-          <span className="font-mono text-[10px] text-muted-foreground tracking-widest">SCROLL</span>
-          <ArrowDown size={16} className="text-primary animate-bounce" />
+        {/* Scroll label */}
+        <div className="hero-scroll-label">
+          <div className="hero-scroll-line" />
+          <span>Scroll to explore</span>
+          <span>→</span>
+        </div>
+
+        {/* Year / portfolio badge */}
+        <div className="hero-year">
+          <div>©2025</div>
+          <div>Portfolio</div>
+          <div style={{ marginTop: "0.5rem", color: "rgba(255,255,255,0.18)" }}>v2.0</div>
         </div>
       </section>
 
       {/* ── ABOUT ─────────────────────────────────────────────────────────── */}
-      <section id="about" className="py-32 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-24 items-start">
-
-          <div className="about-block">
-            <div className="section-line" />
-            <p className="font-mono text-xs text-primary tracking-widest mb-4">// about</p>
-            <h2 className="font-sans font-bold text-4xl md:text-5xl leading-tight mb-8">
-              Final-year Security<br />
-              <span className="gradient-text">Undergraduate.</span>
-            </h2>
-            <div className="space-y-4 text-muted-foreground leading-relaxed">
-              <p>
-                Specializing in <span className="text-foreground font-medium">Application Security and DevSecOps</span> at
-                Ghulam Ishaq Khan Institute (GIKI), with internship experience in security testing and secure
-                development at Thingtrax.
-              </p>
-              <p>
-                Hands-on across threat modeling, SAST/SCA pipeline gating, and OWASP-based hardening — plus applied
-                ML research in wireless security and intrusion detection.
-              </p>
-              <p>
-                Two-time Dean's Honor List recipient (5th and 6th semesters). Expected graduation: June 2027.
-              </p>
+      <section
+        id="about"
+        style={{
+          padding: "clamp(5rem, 10vw, 10rem) clamp(2rem, 6vw, 7rem)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <div className="section-label">About</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(3rem, 6vw, 7rem)", alignItems: "start" }}>
+          {/* Mission statement */}
+          <div>
+            <div
+              className="mission-text"
+              style={{ fontSize: "clamp(2.2rem, 5vw, 5rem)" }}
+            >
+              {["Securing", "systems.", "Protecting", "futures."].map((word) => (
+                <span key={word} className="mission-line-wrap">
+                  <span className="mission-line">{word}</span>{" "}
+                </span>
+              ))}
             </div>
           </div>
 
-          <div className="about-block">
-            <div className="terminal-window">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-card">
-                <span className="w-2.5 h-2.5 rounded-full bg-destructive/70" />
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
-                <span className="w-2.5 h-2.5 rounded-full bg-primary/70" />
-                <span className="font-mono text-xs text-muted-foreground ml-2">profile.json</span>
-              </div>
-              <div className="p-5 font-mono text-sm leading-relaxed">
-                <pre className="text-muted-foreground whitespace-pre-wrap overflow-x-auto">
-{`{
-  `}<span className="text-primary">"name"</span>{`: "Muhammad Abubakar",
-  `}<span className="text-primary">"degree"</span>{`: "BSc Cyber Security",
-  `}<span className="text-primary">"institution"</span>{`: "GIKI",
-  `}<span className="text-primary">"gpa"</span>{`: `}<span className="text-accent">3.3</span>{`,
-  `}<span className="text-primary">"honors"</span>{`: [`}<span className="text-yellow-400">"Dean's List"</span>{`, `}<span className="text-yellow-400">"x2"</span>{`],
-  `}<span className="text-primary">"focus"</span>{`: [
-    `}<span className="text-yellow-400">"Application Security"</span>{`,
-    `}<span className="text-yellow-400">"DevSecOps"</span>{`,
-    `}<span className="text-yellow-400">"Pen Testing"</span>{`,
-    `}<span className="text-yellow-400">"ML for Security"</span>{`
-  ],
-  `}<span className="text-primary">"status"</span>{`: `}<span className="text-green-400">"open to opportunities"</span>{`
-}`}
-                </pre>
-              </div>
-            </div>
-          </div>
+          {/* Bio */}
+          <div
+            className="about-body"
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: "0.92rem",
+              lineHeight: 1.8,
+              color: "rgba(255,255,255,0.5)",
+              paddingTop: "0.5rem",
+            }}
+          >
+            <p style={{ marginBottom: "1.25rem" }}>
+              Final-year Cyber Security undergraduate at{" "}
+              <span style={{ color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>
+                Ghulam Ishaq Khan Institute (GIKI)
+              </span>{" "}
+              — specializing in Application Security and DevSecOps. Internship
+              experience in security testing and secure development at Thingtrax.
+            </p>
+            <p style={{ marginBottom: "1.25rem" }}>
+              Hands-on across threat modeling, SAST/SCA pipeline gating, OWASP-based
+              hardening, and applied ML research in wireless security and intrusion
+              detection.
+            </p>
+            <p style={{ marginBottom: "2rem" }}>
+              Two-time{" "}
+              <span style={{ color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>
+                Dean's Honor List
+              </span>{" "}
+              recipient (5th and 6th semesters). CGPA 3.3 / 4.00. Expected graduation:
+              June 2027.
+            </p>
 
-        </div>
-      </section>
-
-      {/* ── EXPERIENCE ─────────────────────────────────────────────────────── */}
-      <section id="experience" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="section-line" />
-        <p className="font-mono text-xs text-primary tracking-widest mb-4">// experience</p>
-        <h2 className="font-sans font-bold text-4xl md:text-5xl mb-16">
-          Professional<br /><span className="gradient-text">Experience.</span>
-        </h2>
-
-        <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-0 top-0 bottom-0 w-px bg-border hidden md:block" />
-
-          <div className="space-y-12 md:pl-10">
-            {EXPERIENCE.map((exp, i) => (
-              <div key={i} className="exp-item relative">
-                {/* Timeline dot */}
-                <div className="hidden md:block absolute -left-[2.65rem] top-1.5 w-2.5 h-2.5 rounded-full border border-primary bg-background" />
-
-                <div className="terminal-window">
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-b border-border bg-card">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-primary/70" />
-                      <span className="font-mono text-xs text-muted-foreground">{exp.company}</span>
-                    </div>
-                    <span className="font-mono text-xs text-primary">{exp.period}</span>
+            {/* Stats row */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "1.5rem",
+                borderTop: "1px solid rgba(255,255,255,0.1)",
+                paddingTop: "1.5rem",
+              }}
+            >
+              {[
+                { v: "3.3", l: "GPA / 4.00" },
+                { v: "2×", l: "Dean's List" },
+                { v: "5", l: "Projects" },
+              ].map(({ v, l }) => (
+                <div key={l}>
+                  <div
+                    style={{
+                      fontFamily: "'Syne', sans-serif",
+                      fontWeight: 800,
+                      fontSize: "1.75rem",
+                      color: "#fff",
+                      letterSpacing: "-0.03em",
+                    }}
+                  >
+                    {v}
                   </div>
-                  <div className="p-5">
-                    <h3 className="font-sans font-semibold text-lg mb-4 text-foreground">{exp.role}</h3>
-                    <ul className="space-y-2">
-                      {exp.bullets.map((b, j) => (
-                        <li key={j} className="flex gap-3 text-sm text-muted-foreground leading-relaxed">
-                          <span className="text-primary font-mono mt-0.5 shrink-0">▸</span>
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: "0.6rem",
+                      letterSpacing: "0.15em",
+                      textTransform: "uppercase",
+                      color: "rgba(255,255,255,0.28)",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {l}
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── PROJECTS ──────────────────────────────────────────────────────── */}
-      <section id="projects" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="section-line" />
-        <p className="font-mono text-xs text-primary tracking-widest mb-4">// projects</p>
-        <h2 className="font-sans font-bold text-4xl md:text-5xl mb-16">
-          Selected<br /><span className="gradient-text">Work.</span>
-        </h2>
+      <section
+        id="projects"
+        style={{
+          padding: "clamp(5rem, 10vw, 10rem) clamp(2rem, 6vw, 7rem)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            marginBottom: "4rem",
+          }}
+        >
+          <div className="section-label" style={{ marginBottom: 0 }}>Projects</div>
+          <span
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: "0.65rem",
+              letterSpacing: "0.1em",
+              color: "rgba(255,255,255,0.2)",
+            }}
+          >
+            0{PROJECTS.length} total
+          </span>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {PROJECTS.map((p, i) => (
-            <div
-              key={p.id}
-              data-testid={`card-project-${p.id}`}
-              className={`project-card terminal-window group cursor-default ${i === 0 ? "lg:col-span-2" : ""}`}
-            >
-              {/* Terminal title bar */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.accent + "99" }} />
-                  <span className="font-mono text-xs text-muted-foreground ml-2">
-                    ~/projects/{p.slug}
-                  </span>
-                </div>
-                <span className="project-number">// {p.id}</span>
+        <div className="works-list">
+          {PROJECTS.map((p) => (
+            <div key={p.id} className="work-row" data-testid={`card-project-${p.id}`}>
+              <span className="work-num">{p.id}</span>
+              <div>
+                <div className="work-title">{p.title}</div>
+                <div className="work-sub">{p.description}</div>
               </div>
-
-              {/* Card body */}
-              <div className={`p-6 md:p-8 ${i === 0 ? "md:grid md:grid-cols-2 md:gap-12" : ""}`}>
-                <div>
-                  <p className="font-mono text-xs tracking-widest mb-2" style={{ color: p.accent }}>
-                    {p.category}
-                  </p>
-                  <h3 className="font-sans font-bold text-2xl md:text-3xl mb-4 group-hover:text-primary transition-colors duration-300">
-                    {p.title}
-                  </h3>
-                  {i === 0 && (
-                    <p className="text-muted-foreground leading-relaxed md:hidden mb-4">{p.description}</p>
-                  )}
-                  {i !== 0 && (
-                    <p className="text-muted-foreground leading-relaxed mb-6 text-sm">{p.description}</p>
-                  )}
-                </div>
-
-                <div className={i === 0 ? "flex flex-col justify-center" : ""}>
-                  {i === 0 && (
-                    <p className="text-muted-foreground leading-relaxed mb-6 hidden md:block">{p.description}</p>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    {p.tags.map((tag) => (
-                      <span key={tag} className="skill-tag">{tag}</span>
-                    ))}
-                  </div>
-                  <a
-                    href="https://github.com/abubakar-amir"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 mt-5 font-mono text-xs text-muted-foreground hover:text-primary transition-colors duration-200"
-                  >
-                    <Github size={13} />
-                    view on github
-                    <ExternalLink size={11} />
-                  </a>
-                </div>
+              <div className="work-tags">
+                {p.tags.map((t) => (
+                  <span key={t} className="work-tag">{t}</span>
+                ))}
               </div>
+              <span className="work-arrow">↗</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── EXPERIENCE ────────────────────────────────────────────────────── */}
+      <section
+        id="experience"
+        style={{
+          padding: "clamp(5rem, 10vw, 10rem) clamp(2rem, 6vw, 7rem)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <div className="section-label">Experience</div>
+        <div className="exp-grid">
+          {EXPERIENCE.map((exp, i) => (
+            <div key={i} className="exp-card">
+              <div className="exp-period">{exp.period}</div>
+              <div className="exp-company">{exp.company}</div>
+              <div className="exp-role">{exp.role}</div>
+              {exp.bullets.map((b, j) => (
+                <div key={j} className="exp-bullet">
+                  <span className="exp-bullet-mark">—</span>
+                  <span>{b}</span>
+                </div>
+              ))}
             </div>
           ))}
         </div>
       </section>
 
       {/* ── SKILLS ────────────────────────────────────────────────────────── */}
-      <section id="skills" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="section-line" />
-        <p className="font-mono text-xs text-primary tracking-widest mb-4">// skills</p>
-        <h2 className="font-sans font-bold text-4xl md:text-5xl mb-16">
-          Toolkit &amp;<br /><span className="gradient-text">Expertise.</span>
-        </h2>
-
-        <div className="terminal-window">
-          <div className="flex items-center gap-2 px-5 py-3 border-b border-border bg-card">
-            <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-            <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
-            <span className="font-mono text-xs text-muted-foreground ml-2">$ cat skills.json</span>
-          </div>
-          <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {SKILL_CATEGORIES.map((cat) => (
-              <div key={cat.label} className="skill-category">
-                <p className="font-mono text-xs text-primary tracking-widest mb-4">
-                  <span className="text-muted-foreground">"</span>{cat.label}<span className="text-muted-foreground">":</span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {cat.items.map((item) => (
-                    <span key={item} className="skill-tag">{item}</span>
-                  ))}
-                </div>
+      <section
+        id="skills"
+        style={{
+          padding: "clamp(5rem, 10vw, 10rem) clamp(2rem, 6vw, 7rem)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <div className="section-label">Skills</div>
+        <div className="skills-grid">
+          {SKILLS.map((cat) => (
+            <div key={cat.label} className="skill-category-cell">
+              <div className="skill-cat-label">{cat.label}</div>
+              <div className="skill-items">
+                {cat.items.map((item) => (
+                  <span key={item} className="skill-item-text">{item}</span>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CERTIFICATIONS ────────────────────────────────────────────────── */}
-      <section className="py-12 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="border border-border rounded px-6 py-5 flex flex-wrap items-center gap-x-8 gap-y-3">
-          <div className="flex items-center gap-2 shrink-0">
-            <Shield size={14} className="text-primary" />
-            <span className="font-mono text-xs text-primary tracking-widest">CERTIFICATIONS</span>
-          </div>
-          {CERTS.map((c) => (
-            <span key={c} className="font-mono text-xs text-muted-foreground">{c}</span>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* ── CONTACT ───────────────────────────────────────────────────────── */}
-      <section id="contact" className="py-32 md:py-40 px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="section-line" />
-        <p className="contact-piece font-mono text-xs text-primary tracking-widest mb-4">// contact</p>
-
-        <h2 className="contact-piece font-sans font-bold text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tight mb-16">
-          Let&rsquo;s build<br />
-          something<br />
-          <span className="gradient-text">secure.</span>
-        </h2>
-
-        <div className="contact-piece grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
-          <div className="space-y-6">
-            <p className="text-muted-foreground leading-relaxed max-w-md">
-              Open to internship opportunities, security research collaborations, and full-time roles
-              starting after June 2027.
-            </p>
-            <a
-              href="mailto:abubakaramirwork@gmail.com"
-              data-testid="link-email"
-              className="block font-mono text-lg md:text-2xl text-foreground hover:text-primary transition-colors duration-300 border-b border-border hover:border-primary pb-2 w-fit"
-            >
-              abubakaramirwork@gmail.com
-            </a>
-          </div>
-
-          <div className="flex gap-4">
-            <a
-              href="https://github.com/abubakar-amir"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="link-github"
-              className="flex items-center gap-2 px-5 py-3 border border-border rounded hover:border-primary hover:text-primary transition-all duration-300 font-mono text-sm"
-            >
-              <Github size={16} />
-              GitHub
-            </a>
-            <a
-              href="https://linkedin.com/in/abubakar-amir"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="link-linkedin"
-              className="flex items-center gap-2 px-5 py-3 border border-border rounded hover:border-primary hover:text-primary transition-all duration-300 font-mono text-sm"
-            >
-              <Linkedin size={16} />
-              LinkedIn
-            </a>
-            <a
-              href="mailto:abubakaramirwork@gmail.com"
-              data-testid="link-mail"
-              className="flex items-center gap-2 px-5 py-3 border border-border rounded hover:border-primary hover:text-primary transition-all duration-300 font-mono text-sm"
-            >
-              <Mail size={16} />
-              Email
-            </a>
-          </div>
-        </div>
-
-        {/* Footer line */}
-        <div className="contact-piece mt-24 pt-8 border-t border-border flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <span className="font-mono text-xs text-muted-foreground">
-            Muhammad Abubakar · Lahore, Pakistan · +92 339 4959692
-          </span>
-          <span className="font-mono text-xs text-muted-foreground">
-            <span className="text-primary">GIKI</span> · BSc Cyber Security · 2023–2027
-          </span>
+      {/* ── VISION ────────────────────────────────────────────────────────── */}
+      <section
+        id="vision"
+        className="vision-section"
+        style={{ padding: "clamp(5rem, 10vw, 10rem) clamp(2rem, 6vw, 7rem)" }}
+      >
+        <div className="vision-text">
+          Building security<br />
+          into <span>every</span> layer.
         </div>
       </section>
 
-    </div>
+      {/* ── CERTS marquee ─────────────────────────────────────────────────── */}
+      <div className="cert-bar">
+        <div className="cert-track">
+          {[...CERTS, ...CERTS].map((c, i) => (
+            <span key={i} className={i % 2 === 1 ? "cert-sep" : "cert-item"}>
+              {i % 2 === 1 ? "·" : c}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── CONTACT ───────────────────────────────────────────────────────── */}
+      <section
+        id="contact"
+        style={{
+          padding: "clamp(6rem, 12vw, 12rem) clamp(2rem, 6vw, 7rem) 0",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <div
+          className="section-label contact-piece"
+          style={{ marginBottom: "3rem" }}
+        >
+          Contact
+        </div>
+
+        <div
+          className="contact-piece"
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            fontWeight: 700,
+            fontSize: "clamp(2rem, 6vw, 6rem)",
+            letterSpacing: "-0.04em",
+            lineHeight: 1.0,
+            color: "#fff",
+            marginBottom: "3.5rem",
+          }}
+        >
+          Let's build something
+          <br />
+          <span
+            style={{
+              color: "transparent",
+              WebkitTextStroke: "2px rgba(255,255,255,0.5)",
+            }}
+          >
+            remarkable.
+          </span>
+        </div>
+
+        <div
+          className="contact-piece"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: "2rem",
+            paddingBottom: "4rem",
+          }}
+        >
+          <a
+            href="mailto:abubakaramirwork@gmail.com"
+            className="contact-email"
+            data-testid="link-email"
+          >
+            abubakaramirwork@gmail.com
+          </a>
+
+          <div style={{ display: "flex", gap: "2rem" }}>
+            <ScrambleLink
+              href="https://github.com/abubakar-amir"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-link"
+            >
+              GitHub →
+            </ScrambleLink>
+            <ScrambleLink
+              href="https://linkedin.com/in/abubakar-amir"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-link"
+            >
+              LinkedIn →
+            </ScrambleLink>
+            <ScrambleLink
+              href="tel:+923394959692"
+              className="footer-link"
+            >
+              +92 339 4959692
+            </ScrambleLink>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ────────────────────────────────────────────────────────── */}
+      <footer className="site-footer">
+        <div className="footer-left">
+          <div>Muhammad Abubakar</div>
+          <div>GIKI · Lahore, Pakistan</div>
+          <div style={{ marginTop: "0.5rem" }}>BSc Cyber Security · 2023 – 2027</div>
+        </div>
+        <div className="footer-logo">M.A</div>
+        <div className="footer-right">
+          <ScrambleLink href="https://github.com/abubakar-amir" target="_blank" rel="noopener noreferrer" className="footer-link">
+            GitHub
+          </ScrambleLink>
+          <ScrambleLink href="https://linkedin.com/in/abubakar-amir" target="_blank" rel="noopener noreferrer" className="footer-link">
+            LinkedIn
+          </ScrambleLink>
+          <span
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: "0.65rem",
+              letterSpacing: "0.1em",
+              color: "rgba(255,255,255,0.18)",
+            }}
+          >
+            ©2025
+          </span>
+        </div>
+      </footer>
+    </>
   );
 }
