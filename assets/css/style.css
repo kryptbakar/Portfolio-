@@ -182,7 +182,7 @@ em { font-style: normal; }
   position: relative; min-height: 100svh; width: 100%;
   display: flex; flex-direction: column; justify-content: space-between;
   padding: calc(var(--nav-h) + 2vh) var(--pad) clamp(1.5rem, 4vh, 3rem);
-  overflow: hidden;
+  overflow: hidden; isolation: isolate;
 }
 .hero__canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
 .hero__grid {
@@ -406,15 +406,64 @@ html.work-horizontal .work__progress i { display: block; height: 100%; width: 10
 
 /* ── reveal helpers (JS-driven) ────────────────────────────────────────── */
 [data-fade] { opacity: 0; transform: translateY(34px); }
-[data-split] .split-line { display: block; overflow: hidden; }
-[data-split] .split-line > span { display: block; transform: translateY(110%); will-change: transform; }
+[data-split] .split-line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+[data-split] .split-inner { display: block; }
+[data-split] .word { display: inline-block; }
+[data-split] .word > span { display: inline-block; transform: translateY(115%); will-change: transform; }
 
 /* graceful fallback if GSAP / JS never arrives (CDN blocked, JS disabled) */
 .no-gsap #loader { display: none; }
 .no-gsap [data-fade] { opacity: 1; transform: none; }
-.no-gsap [data-split] .split-line > span,
+.no-gsap [data-split] .word > span,
 .no-gsap .hero__title .line__in { transform: none; }
 .no-gsap .manifesto__text .w { opacity: 1; }
+
+/* ── enhancements: progress · aurora · spotlight · depth · ring ────────── */
+.scroll-progress { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 8600; pointer-events: none; background: var(--line-soft); }
+.scroll-progress i { display: block; height: 100%; transform: scaleX(0); transform-origin: left; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+
+.aurora { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.aurora span { position: absolute; width: 48vw; height: 48vw; border-radius: 50%; filter: blur(70px); opacity: 0.4; mix-blend-mode: screen; will-change: transform; }
+.aurora span:nth-child(1) { background: radial-gradient(circle, rgba(201,242,78,0.55), transparent 70%); top: -12%; left: -6%; animation: drift1 19s var(--ease) infinite; }
+.aurora span:nth-child(2) { background: radial-gradient(circle, rgba(96,150,255,0.40), transparent 70%); bottom: -16%; right: -8%; animation: drift2 23s var(--ease) infinite; }
+.aurora span:nth-child(3) { background: radial-gradient(circle, rgba(201,242,78,0.30), transparent 70%); top: 28%; right: 22%; animation: drift3 27s var(--ease) infinite; }
+@keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(7vw, 6vh) scale(1.15); } }
+@keyframes drift2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-6vw, -7vh) scale(1.10); } }
+@keyframes drift3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-5vw, 5vh) scale(0.90); } }
+.hero .aurora { z-index: 1; opacity: 0.55; }
+
+.contact { position: relative; overflow: hidden; isolation: isolate; }
+.contact > :not(.aurora):not(.deco-ring) { position: relative; z-index: 1; }
+
+/* cursor spotlight glow */
+[data-spotlight] { position: relative; overflow: hidden; }
+[data-spotlight]::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 0;
+  transition: opacity 0.4s var(--ease);
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), var(--accent-2), transparent 65%); }
+[data-spotlight]:hover::after { opacity: 1; }
+.skills__cell > *, .idcard > * { position: relative; z-index: 1; }
+
+/* project depth: ghost numeral, visual glow, scroll parallax */
+.panel__body, .panel__visual { position: relative; z-index: 1; }
+.panel__ghost { position: absolute; right: var(--pad); bottom: -0.12em; z-index: 0;
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(7rem, 22vw, 17rem); line-height: 0.7;
+  letter-spacing: -0.05em; color: transparent; -webkit-text-stroke: 1px rgba(242, 239, 230, 0.05);
+  pointer-events: none; user-select: none; }
+html.work-horizontal .panel__ghost { right: clamp(1rem, 3vw, 3rem); }
+.panel__visual { transition: border-color 0.45s var(--ease), box-shadow 0.45s var(--ease); }
+.panel:hover .panel__visual { border-color: rgba(201, 242, 78, 0.35); box-shadow: 0 40px 90px -50px rgba(201, 242, 78, 0.5); }
+
+/* accent glow on emphasized type */
+.manifesto__text .w.accent { text-shadow: 0 0 34px rgba(201, 242, 78, 0.28); }
+.work__heading em, .contact__head em, .exp__main h3 em { text-shadow: 0 0 30px rgba(201, 242, 78, 0.22); }
+
+/* decorative alchemy ring */
+.deco-ring { position: absolute; top: 6%; right: 5%; width: clamp(220px, 30vw, 460px); aspect-ratio: 1;
+  border: 1px dashed rgba(242, 239, 230, 0.12); border-radius: 50%; animation: ringspin 44s linear infinite; }
+.deco-ring::before { content: ""; position: absolute; inset: 16%; border-radius: 50%;
+  border: 1px solid rgba(201, 242, 78, 0.18); border-top-color: var(--accent); animation: ringspin 15s linear infinite reverse; }
+.deco-ring::after { content: ""; position: absolute; inset: 38%; border-radius: 50%; border: 1px dashed rgba(242, 239, 230, 0.10); }
+@keyframes ringspin { to { transform: rotate(360deg); } }
 
 /* ── responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
@@ -442,10 +491,10 @@ html.work-horizontal .work__progress i { display: block; height: 100%; width: 10
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
-  .grain, .hero__canvas { display: none; }
+  .grain, .hero__canvas, .aurora, .deco-ring, .scroll-progress { display: none; }
   [data-fade] { opacity: 1; transform: none; }
   .hero__title .line__in { transform: none; }
-  [data-split] .split-line > span { transform: none; }
+  [data-split] .word > span { transform: none; }
   .manifesto__text .w { opacity: 1; }
   .manifesto__text .w.accent { color: var(--accent); }
   .loader { display: none; }

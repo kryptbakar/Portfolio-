@@ -184,10 +184,30 @@
     });
   }
 
-  /* ── split-line reveals ─────────────────────────────────────────────── */
-  function splitLines(el) {
-    const parts = el.innerHTML.split(/<br\s*\/?>/i);
-    el.innerHTML = parts.map((p) => `<span class="split-line"><span>${p}</span></span>`).join("");
+  /* ── word-level split (preserves <em> markup) ───────────────────────── */
+  function splitWords(el) {
+    const lines = el.innerHTML.split(/<br\s*\/?>/i);
+    el.innerHTML = lines
+      .map((l) => `<span class="split-line"><span class="split-inner">${l}</span></span>`)
+      .join("");
+    el.querySelectorAll(".split-inner").forEach(wrapWords);
+  }
+  function wrapWords(node) {
+    Array.from(node.childNodes).forEach((child) => {
+      if (child.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        child.textContent.split(/(\s+)/).forEach((tok) => {
+          if (tok === "") return;
+          if (/^\s+$/.test(tok)) { frag.appendChild(document.createTextNode(tok)); return; }
+          const w = document.createElement("span"); w.className = "word";
+          const inner = document.createElement("span"); inner.textContent = tok;
+          w.appendChild(inner); frag.appendChild(w);
+        });
+        node.replaceChild(frag, child);
+      } else if (child.nodeType === 1) {
+        wrapWords(child);
+      }
+    });
   }
 
   /* ── all scroll-driven setup ────────────────────────────────────────── */
@@ -200,11 +220,11 @@
     gsap.to(".hero__canvas", { opacity: 0, ease: "none",
       scrollTrigger: { trigger: "#hero", start: "top top", end: "bottom top", scrub: true } });
 
-    // split headings
+    // split headings (word-level reveal)
     $$("[data-split]").forEach((el) => {
-      splitLines(el);
-      gsap.fromTo(el.querySelectorAll(".split-line > span"), { yPercent: 110 }, {
-        yPercent: 0, duration: 1.1, ease: "power4.out", stagger: 0.12,
+      splitWords(el);
+      gsap.fromTo(el.querySelectorAll(".word > span"), { yPercent: 115 }, {
+        yPercent: 0, duration: 1.0, ease: "power4.out", stagger: 0.045,
         scrollTrigger: { trigger: el, start: "top 84%" },
       });
     });
@@ -238,25 +258,44 @@
     initWork();
   }
 
-  /* ── horizontal pinned work ─────────────────────────────────────────── */
+  /* ── horizontal pinned work + scroll-coupled depth ──────────────────── */
   function initWork() {
     const pin = $("#workPin"), track = $("#workTrack");
     if (!pin || !track) return;
     const counter = $("#workCounter"), progress = $("#workProgress");
-    const total = $$(".panel", track).length;
+    const panels = $$(".panel", track);
+    const total = panels.length;
     const mm = matchMedia("(min-width: 1024px) and (pointer: fine)");
-    let tween = null;
+    let tween = null, extra = [];
 
     const dist = () => Math.max(0, track.scrollWidth - innerWidth);
 
     function teardown() {
       document.documentElement.classList.remove("work-horizontal");
       if (tween) { if (tween.scrollTrigger) tween.scrollTrigger.kill(); tween.kill(); tween = null; }
+      extra.forEach((t) => { if (t.scrollTrigger) t.scrollTrigger.kill(); t.kill(); });
+      extra = [];
       gsap.set(track, { x: 0 });
+      gsap.set(track.querySelectorAll(".panel__visual"), { clearProps: "transform" });
+      gsap.set(track.querySelectorAll(".panel__body > *"), { clearProps: "opacity,transform" });
     }
+
     function build() {
       teardown();
-      if (reduced || !mm.matches) return;
+
+      // mobile / tablet: simple vertical reveals
+      if (!mm.matches) {
+        panels.forEach((p) => {
+          const body = p.querySelector(".panel__body");
+          if (body) extra.push(gsap.from(body.children, {
+            y: 40, opacity: 0, duration: 0.7, stagger: 0.05, ease: "power3.out",
+            scrollTrigger: { trigger: p, start: "top 82%" },
+          }));
+        });
+        return;
+      }
+
+      // desktop: pinned horizontal track
       document.documentElement.classList.add("work-horizontal");
       tween = gsap.to(track, {
         x: () => -dist(), ease: "none",
@@ -272,7 +311,22 @@
           },
         },
       });
+
+      // depth: visuals parallax + text stagger, driven by the horizontal scroll
+      panels.forEach((p) => {
+        const vis = p.querySelector(".panel__visual");
+        const body = p.querySelector(".panel__body");
+        if (vis) extra.push(gsap.fromTo(vis, { xPercent: 7 }, {
+          xPercent: -7, ease: "none",
+          scrollTrigger: { trigger: p, containerAnimation: tween, start: "left right", end: "right left", scrub: true },
+        }));
+        if (body) extra.push(gsap.from(body.children, {
+          y: 55, opacity: 0, stagger: 0.05, ease: "power3.out",
+          scrollTrigger: { trigger: p, containerAnimation: tween, start: "left 85%", end: "left 38%", scrub: true },
+        }));
+      });
     }
+
     build();
     mm.addEventListener("change", () => { build(); ScrollTrigger.refresh(); });
   }
@@ -318,6 +372,58 @@
     });
   }
 
+  /* ── scroll progress bar ────────────────────────────────────────────── */
+  function initScrollProgress() {
+    const bar = $("#scrollProgress");
+    if (!bar || !motion) return;
+    const fill = bar.firstElementChild;
+    ScrollTrigger.create({ start: 0, end: "max", onUpdate: (self) => {
+      fill.style.transform = "scaleX(" + self.progress.toFixed(4) + ")";
+    } });
+  }
+
+  /* ── cursor spotlight on cards & buttons ────────────────────────────── */
+  function initSpotlight() {
+    if (!fine) return;
+    $$(".skills__cell, .idcard, .contact__copy, .footer__top").forEach((el) => {
+      el.setAttribute("data-spotlight", "");
+      el.addEventListener("mousemove", (e) => {
+        const r = el.getBoundingClientRect();
+        el.style.setProperty("--mx", ((e.clientX - r.left) / r.width) * 100 + "%");
+        el.style.setProperty("--my", ((e.clientY - r.top) / r.height) * 100 + "%");
+      }, { passive: true });
+    });
+  }
+
+  /* ── 3D tilt on the profile card ────────────────────────────────────── */
+  function initTilt() {
+    if (!fine || !hasGSAP) return;
+    $$(".idcard").forEach((el) => {
+      gsap.set(el, { transformPerspective: 900, transformOrigin: "center" });
+      const rx = gsap.quickTo(el, "rotationX", { duration: 0.6, ease: "power3" });
+      const ry = gsap.quickTo(el, "rotationY", { duration: 0.6, ease: "power3" });
+      el.addEventListener("mousemove", (e) => {
+        const r = el.getBoundingClientRect();
+        ry(((e.clientX - (r.left + r.width / 2)) / r.width) * 9);
+        rx((-(e.clientY - (r.top + r.height / 2)) / r.height) * 9);
+      });
+      el.addEventListener("mouseleave", () => { rx(0); ry(0); });
+    });
+  }
+
+  /* ── giant ghost numerals behind each project ───────────────────────── */
+  function initGhost() {
+    $$(".panel").forEach((p) => {
+      const meta = p.querySelector(".panel__meta span");
+      if (!meta) return;
+      const g = document.createElement("span");
+      g.className = "panel__ghost";
+      g.setAttribute("aria-hidden", "true");
+      g.textContent = meta.textContent.trim();
+      p.appendChild(g);
+    });
+  }
+
   /* ── preloader ──────────────────────────────────────────────────────── */
   function runLoader(done) {
     const loader = $("#loader");
@@ -344,6 +450,7 @@
     document.body.classList.remove("is-loading");
     initSmooth();
     buildScroll();
+    initScrollProgress();
     heroIntro();
     if (hasGSAP) {
       ScrollTrigger.refresh();
@@ -360,6 +467,9 @@
   initFlow();
   initMarquees();
   initNav();
+  initGhost();
+  initSpotlight();
+  initTilt();
 
   runLoader(start);
 
