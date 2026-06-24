@@ -678,6 +678,94 @@
     ids.forEach((id) => { const el = document.getElementById(id); if (el) io.observe(el); });
   }
 
+  /* ── command palette (⌘K) ───────────────────────────────────────────── */
+  function initCommandPalette() {
+    const root = document.createElement("div");
+    root.className = "cmdk"; root.setAttribute("hidden", "");
+    root.innerHTML =
+      '<div class="cmdk__backdrop" data-close></div>' +
+      '<div class="cmdk__panel" role="dialog" aria-modal="true" aria-label="Command menu">' +
+        '<div class="cmdk__bar"><span class="cmdk__prompt mono">&gt;_</span>' +
+        '<input class="cmdk__input" type="text" placeholder="Type a command or search…" aria-label="Command search" />' +
+        '<span class="cmdk__esc mono">ESC</span></div>' +
+        '<ul class="cmdk__list" role="listbox"></ul>' +
+        '<div class="cmdk__foot mono"><span>↑ ↓ navigate</span><span>↵ select</span><span>esc close</span></div>' +
+      "</div>";
+    document.body.appendChild(root);
+    const input = root.querySelector(".cmdk__input");
+    const list = root.querySelector(".cmdk__list");
+
+    const EMAIL = "abubakaramirwork@gmail.com";
+    const toast = (msg) => {
+      const t = document.createElement("div"); t.className = "cmdk-toast mono"; t.textContent = msg;
+      document.body.appendChild(t); requestAnimationFrame(() => t.classList.add("is-on"));
+      setTimeout(() => { t.classList.remove("is-on"); setTimeout(() => t.remove(), 320); }, 1500);
+    };
+    const goto = (id) => () => { const t = document.querySelector(id); if (t) scrollTo(t); };
+    const open = (url) => () => window.open(url, "_blank", "noopener");
+
+    const cmds = [
+      { label: "Selected Work", hint: "Section", kw: "projects 3d portfolio", run: goto("#work") },
+      { label: "About", hint: "Section", kw: "bio manifesto story", run: goto("#about") },
+      { label: "Approach", hint: "Section", kw: "methodology pipeline", run: goto("#approach") },
+      { label: "Capabilities", hint: "Section", kw: "skills graph stack", run: goto("#skills") },
+      { label: "Archive", hint: "Section", kw: "more projects repos", run: goto("#archive") },
+      { label: "Experience", hint: "Section", kw: "work history thingtrax", run: goto("#experience") },
+      { label: "Contact", hint: "Section", kw: "email reach hire", run: goto("#contact") },
+    ];
+    $$("#workTrack .panel").forEach((p) => {
+      const title = (p.querySelector(".panel__title")?.innerHTML || "").replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").trim();
+      const url = p.querySelector(".panel__link")?.href;
+      if (url && title) cmds.push({ label: "Open " + title + " repo", hint: "GitHub", kw: "project code repo", run: open(url) });
+    });
+    cmds.push(
+      { label: "Copy email address", hint: "Action", kw: "contact mail", run: async () => { try { await navigator.clipboard.writeText(EMAIL); toast("Email copied ✓"); } catch (_) { location.href = "mailto:" + EMAIL; } } },
+      { label: "Send an email", hint: "mailto", kw: "contact hire reach", run: () => { location.href = "mailto:" + EMAIL; } },
+      { label: "Download CV / résumé", hint: "PDF", kw: "resume cv", run: () => { const a = document.createElement("a"); a.href = "assets/Muhammad-Abubakar-CV.pdf"; a.download = ""; document.body.appendChild(a); a.click(); a.remove(); } },
+      { label: "Open GitHub", hint: "↗", kw: "code kryptbakar", run: open("https://github.com/kryptbakar") },
+      { label: "Open LinkedIn", hint: "↗", kw: "connect", run: open("https://www.linkedin.com/in/muhammad-abubakar-28b4a2312/") },
+      { label: "sudo hire-me", hint: "☺", kw: "job available recruit", run: () => { location.href = "mailto:" + EMAIL + "?subject=Let%27s%20work%20together"; } }
+    );
+
+    let filtered = cmds.slice(), sel = 0, isOpen = false;
+    const score = (c, q) => {
+      const s = (c.label + " " + c.kw).toLowerCase();
+      if (!q) return 1;
+      if (s.includes(q)) return 2;
+      let i = 0; for (const ch of s) { if (ch === q[i]) i++; if (i === q.length) return 1; }
+      return 0;
+    };
+    const render = () => {
+      list.innerHTML = filtered.length
+        ? filtered.map((c, i) => `<li class="cmdk__item${i === sel ? " is-sel" : ""}" role="option" data-i="${i}"><span class="cmdk__label">${c.label}</span><span class="cmdk__hint mono">${c.hint}</span></li>`).join("")
+        : '<li class="cmdk__empty mono">No matches</li>';
+    };
+    const refilter = () => {
+      const q = input.value.trim().toLowerCase();
+      filtered = cmds.map((c) => [score(c, q), c]).filter((x) => x[0] > 0).sort((a, b) => b[0] - a[0]).map((x) => x[1]);
+      sel = 0; render();
+    };
+    const show = () => { isOpen = true; root.removeAttribute("hidden"); requestAnimationFrame(() => root.classList.add("is-open")); input.value = ""; filtered = cmds.slice(); sel = 0; render(); setTimeout(() => input.focus(), 40); if (lenis) lenis.stop(); };
+    const hide = () => { isOpen = false; root.classList.remove("is-open"); if (lenis) lenis.start(); setTimeout(() => root.setAttribute("hidden", ""), 300); };
+    const exec = () => { const c = filtered[sel]; hide(); if (c) setTimeout(c.run, 90); };
+    const ensureVis = () => { const el = list.children[sel]; if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" }); };
+
+    input.addEventListener("input", refilter);
+    list.addEventListener("mousemove", (e) => { const li = e.target.closest(".cmdk__item"); if (li) { sel = +li.dataset.i; render(); } });
+    list.addEventListener("click", (e) => { const li = e.target.closest(".cmdk__item"); if (li) { sel = +li.dataset.i; exec(); } });
+    root.querySelector("[data-close]").addEventListener("click", hide);
+    const chip = document.querySelector(".nav__cmdk");
+    if (chip) chip.addEventListener("click", () => (isOpen ? hide() : show()));
+    document.addEventListener("keydown", (e) => {
+      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) { e.preventDefault(); isOpen ? hide() : show(); return; }
+      if (!isOpen) return;
+      if (e.key === "Escape") { e.preventDefault(); hide(); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); sel = Math.min(filtered.length - 1, sel + 1); render(); ensureVis(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); sel = Math.max(0, sel - 1); render(); ensureVis(); }
+      else if (e.key === "Enter") { e.preventDefault(); exec(); }
+    });
+  }
+
   /* ── preloader ──────────────────────────────────────────────────────── */
   function runLoader(done) {
     const loader = $("#loader");
@@ -728,6 +816,7 @@
   initScrollSpy();
   initSkillsGraph();
   initApproachPipeline();
+  initCommandPalette();
 
   runLoader(start);
 
