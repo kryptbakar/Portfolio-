@@ -181,6 +181,93 @@
     }
   }
 
+  /* ── approach: animated security pipeline ───────────────────────────── */
+  function initApproachPipeline() {
+    const section = document.getElementById("approach");
+    if (!section || reduced) return;
+    const canvas = section.querySelector(".approach__canvas");
+    const steps = $$(".approach__step", section);
+    if (!canvas || !steps.length) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const RAW = [224, 86, 63], LIME = [201, 242, 78], N = steps.length;
+    let w = 1, h = 1, dpr = 1, gates = [], started = false, raf = 0, flow = 0;
+    const P = { x: 0, level: 0 };
+    let mode = "travel", seg = 0, from = 0, to = 0, segStart = 0, activeIdx = -1;
+
+    function layout() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const r = canvas.getBoundingClientRect();
+      if (r.width < 2) return;
+      w = canvas.width = Math.round(r.width * dpr);
+      h = canvas.height = Math.round(r.height * dpr);
+      gates = [];
+      for (let i = 0; i < N; i++) gates.push({ x: ((i + 0.5) / N) * w, hit: 0 });
+    }
+    function setActive(i) { if (i === activeIdx) return; clearActive(); activeIdx = i; if (steps[i]) steps[i].classList.add("is-active"); }
+    function clearActive() { if (activeIdx >= 0 && steps[activeIdx]) steps[activeIdx].classList.remove("is-active"); activeIdx = -1; }
+    function startCycle(now) { seg = 0; mode = "travel"; segStart = now; P.level = 0; from = -0.1 * w; to = gates.length ? gates[0].x : w; P.x = from; }
+
+    function update(now) {
+      flow += 0.02;
+      if (!gates.length) { layout(); return; }
+      for (const g of gates) g.hit *= 0.92;
+      if (mode === "travel") {
+        const u = Math.min(1, (now - segStart) / 1.1);
+        const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+        P.x = from + (to - from) * e;
+        if (u >= 1) {
+          if (seg < N) { mode = "dwell"; segStart = now; gates[seg].hit = 1; P.level = seg + 1; setActive(seg); }
+          else startCycle(now);
+        }
+      } else if (now - segStart >= 0.6) {
+        seg++; mode = "travel"; segStart = now; from = P.x;
+        to = seg < N ? gates[seg].x : 1.1 * w;
+        if (seg >= N) clearActive();
+      }
+    }
+    function col(t) { return `rgb(${Math.round(RAW[0] + (LIME[0] - RAW[0]) * t)},${Math.round(RAW[1] + (LIME[1] - RAW[1]) * t)},${Math.round(RAW[2] + (LIME[2] - RAW[2]) * t)})`; }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      const y = h * 0.5, gh = h * 0.32;
+      ctx.strokeStyle = "rgba(242,239,230,0.12)"; ctx.lineWidth = 1.5 * dpr;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      ctx.strokeStyle = "rgba(201,242,78,0.3)"; ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([6 * dpr, 14 * dpr]); ctx.lineDashOffset = -flow * 30 * dpr;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(Math.max(0, P.x), y); ctx.stroke();
+      ctx.setLineDash([]);
+      gates.forEach((g, i) => {
+        const lit = i < P.level || g.hit > 0.05, bw = 10 * dpr;
+        ctx.strokeStyle = lit ? "rgba(201,242,78,0.85)" : "rgba(242,239,230,0.25)"; ctx.lineWidth = 2 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(g.x - bw, y - gh); ctx.lineTo(g.x, y - gh); ctx.lineTo(g.x, y + gh); ctx.lineTo(g.x - bw, y + gh);
+        ctx.moveTo(g.x + bw, y - gh); ctx.lineTo(g.x, y - gh); ctx.moveTo(g.x + bw, y + gh); ctx.lineTo(g.x, y + gh);
+        ctx.stroke();
+        if (g.hit > 0.05) { ctx.strokeStyle = `rgba(201,242,78,${g.hit * 0.7})`; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(g.x, y, (14 + (1 - g.hit) * 26) * dpr, 0, 6.283); ctx.stroke(); }
+        ctx.fillStyle = lit ? "rgba(201,242,78,0.9)" : "rgba(242,239,230,0.3)"; ctx.font = `${9 * dpr}px 'JetBrains Mono',monospace`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+        ctx.fillText(String(i + 1).padStart(2, "0"), g.x, y - gh - 8 * dpr);
+      });
+      ctx.fillStyle = "rgba(201,242,78,0.10)"; ctx.beginPath(); ctx.arc(P.x, y, 22 * dpr, 0, 6.283); ctx.fill();
+      for (let k = 0; k < P.level; k++) { ctx.strokeStyle = `rgba(201,242,78,${0.5 - k * 0.09})`; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(P.x, y, (12 + k * 7) * dpr, 0, 6.283); ctx.stroke(); }
+      ctx.save(); ctx.translate(P.x, y); ctx.rotate(flow * 0.5);
+      const s = 7 * dpr; ctx.fillStyle = col(P.level / N);
+      ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(s, 0); ctx.lineTo(0, s); ctx.lineTo(-s, 0); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    function frame(ts) { if (!started) return; update(ts / 1000); draw(); raf = requestAnimationFrame(frame); }
+
+    layout();
+    window.addEventListener("resize", debounce(layout, 200));
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(([en]) => {
+        if (en.isIntersecting && !started) { started = true; layout(); startCycle(performance.now() / 1000); raf = requestAnimationFrame(frame); }
+        else if (!en.isIntersecting && started) { started = false; cancelAnimationFrame(raf); clearActive(); }
+      }, { threshold: 0.2 }).observe(canvas);
+    } else { started = true; layout(); startCycle(performance.now() / 1000); raf = requestAnimationFrame(frame); }
+  }
+
   /* ── skills knowledge graph (interactive canvas) ────────────────────── */
   function initSkillsGraph() {
     const section = document.getElementById("skills");
@@ -640,6 +727,7 @@
   initTilt();
   initScrollSpy();
   initSkillsGraph();
+  initApproachPipeline();
 
   runLoader(start);
 

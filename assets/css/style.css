@@ -581,6 +581,16 @@ html.webgl-work .work__progress { display: none; }
 .footer__meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; font-size: 0.62rem;
   color: var(--faint); border-top: 1px solid var(--line); padding-top: 1.5rem; }
 
+/* ── approach: animated security pipeline ──────────────────────────────── */
+.approach__pipe { position: relative; margin: clamp(1rem, 3vw, 2.4rem) 0 clamp(1.6rem, 3.5vw, 2.8rem); }
+.approach__canvas { display: block; width: 100%; height: clamp(120px, 15vw, 168px); }
+.approach__step { position: relative; }
+.approach__step::before { content: ""; position: absolute; top: -1px; left: 0; height: 2px; width: 0; background: var(--accent);
+  box-shadow: 0 0 10px var(--accent); transition: width 0.5s var(--ease); }
+.approach__step.is-active { background: var(--bg-soft); }
+.approach__step.is-active::before { width: 100%; }
+.approach__step.is-active .approach__num { color: var(--accent); text-shadow: 0 0 12px rgba(201, 242, 78, 0.5); }
+
 /* ── skills knowledge graph ────────────────────────────────────────────── */
 .skills__stage { position: relative; }
 .skills__canvas { display: none; }
@@ -595,6 +605,7 @@ html.skills-graph .skills__hint span { width: 6px; height: 6px; border-radius: 5
 @media (max-width: 1024px) {
   .rail { display: none; }
   .approach__list { grid-template-columns: repeat(2, 1fr); }
+  .approach__pipe { display: none; }
   .hero__portrait { height: 58vh; right: -4%; opacity: 0.55; }
   .hero__lead { max-width: 78%; }
   .about__grid { grid-template-columns: 1fr; }
