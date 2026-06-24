@@ -420,6 +420,7 @@ html.work-horizontal .work__progress i { display: block; height: 100%; width: 10
 .no-gsap [data-split] .word > span,
 .no-gsap .hero__title .line__in { transform: none; }
 .no-gsap .manifesto__text .w { opacity: 1; }
+.no-gsap .exp__list { --draw: 1; }
 
 /* ── enhancements: progress · aurora · spotlight · depth · ring ────────── */
 .scroll-progress { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 8600; pointer-events: none; background: var(--line-soft); }
@@ -581,6 +582,24 @@ html.webgl-work .work__progress { display: none; }
 .footer__meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; font-size: 0.62rem;
   color: var(--faint); border-top: 1px solid var(--line); padding-top: 1.5rem; }
 
+/* ── experience: git log ───────────────────────────────────────────────── */
+.exp__list { position: relative; display: block; }
+.exp__list::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 1px; background: var(--line); }
+.exp__list::after { content: ""; position: absolute; left: 7px; top: 6px; width: 1px; height: calc(100% - 12px);
+  background: linear-gradient(var(--accent), var(--accent) 75%, transparent); transform: scaleY(var(--draw, 0)); transform-origin: top; }
+.exp__item { position: relative; display: block; grid-template-columns: none; gap: 0; border: none !important;
+  padding: 0 0 clamp(2.2rem, 4vw, 3.4rem) 2.6rem; }
+.exp__item:last-child { padding-bottom: 0; }
+.exp__dot { position: absolute; left: 1px; top: 2px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--accent);
+  background: var(--bg); box-shadow: 0 0 0 4px var(--bg), 0 0 12px rgba(201, 242, 78, 0.45); }
+.exp__commit { color: var(--accent); font-size: 0.72rem; margin-bottom: 0.9rem; }
+.exp__hash { color: var(--fg); } .exp__ref { color: var(--muted); }
+.exp__meta { color: var(--faint); font-size: 0.66rem; line-height: 1.7; margin-bottom: 1rem; white-space: pre-wrap; }
+.exp__body h3 { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.3rem, 2.6vw, 2.1rem);
+  letter-spacing: -0.02em; line-height: 1.05; margin-bottom: 0.8rem; }
+.exp__body h3 em { font-family: var(--font-serif); font-style: italic; color: var(--accent); font-weight: 400; }
+.exp__body p { font-size: clamp(0.95rem, 1.15vw, 1.05rem); line-height: 1.7; color: var(--muted); max-width: 62ch; }
+
 /* ── about: profile terminal ───────────────────────────────────────────── */
 .term { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #0c0c11; align-self: start; }
 .term__bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); }
@@ -689,5 +708,6 @@ html.skills-graph .skills__hint span { width: 6px; height: 6px; border-radius: 5
   [data-split] .word > span { transform: none; }
   .manifesto__text .w { opacity: 1; }
   .manifesto__text .w.accent { color: var(--accent); }
+  .exp__list { --draw: 1; }
   .loader { display: none; }
 }

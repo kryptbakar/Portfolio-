@@ -490,6 +490,13 @@
       }});
     });
 
+    // experience git-graph line draws as you scroll
+    const expList = $(".exp__list");
+    if (expList) ScrollTrigger.create({
+      trigger: "#experience", start: "top 72%", end: "bottom 62%", scrub: true,
+      onUpdate: (self) => expList.style.setProperty("--draw", self.progress.toFixed(3)),
+    });
+
     initWork();
   }
 
