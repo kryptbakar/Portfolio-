@@ -678,6 +678,34 @@
     ids.forEach((id) => { const el = document.getElementById(id); if (el) io.observe(el); });
   }
 
+  /* ── about: profile terminal (types on scroll) ──────────────────────── */
+  function initTerminal() {
+    const term = document.querySelector("[data-term]");
+    if (!term) return;
+    const types = $$(".term__type", term);
+    const outs = $$(".term__out", term);
+    if (reduced || !types.length) return; // static fallback: commands + outputs already visible
+    types.forEach((t) => (t.textContent = ""));
+    outs.forEach((o) => { o.style.opacity = "0"; o.style.transition = "opacity 0.4s var(--ease)"; });
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const typeInto = (el, text) => new Promise((res) => {
+      el.classList.add("is-caret"); let i = 0;
+      const id = setInterval(() => { el.textContent = text.slice(0, ++i); if (i >= text.length) { clearInterval(id); el.classList.remove("is-caret"); res(); } }, 36);
+    });
+    let started = false;
+    const run = async () => {
+      for (let i = 0; i < types.length; i++) {
+        await typeInto(types[i], types[i].dataset.type || "");
+        if (outs[i]) outs[i].style.opacity = "1";
+        await wait(240);
+      }
+    };
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver(([e]) => { if (e.isIntersecting && !started) { started = true; io.disconnect(); run(); } }, { threshold: 0.3 });
+      io.observe(term);
+    } else { run(); }
+  }
+
   /* ── command palette (⌘K) ───────────────────────────────────────────── */
   function initCommandPalette() {
     const root = document.createElement("div");
@@ -817,6 +845,7 @@
   initSkillsGraph();
   initApproachPipeline();
   initCommandPalette();
+  initTerminal();
 
   runLoader(start);
 

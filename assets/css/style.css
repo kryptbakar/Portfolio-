@@ -581,6 +581,22 @@ html.webgl-work .work__progress { display: none; }
 .footer__meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; font-size: 0.62rem;
   color: var(--faint); border-top: 1px solid var(--line); padding-top: 1.5rem; }
 
+/* ── about: profile terminal ───────────────────────────────────────────── */
+.term { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #0c0c11; align-self: start; }
+.term__bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); }
+.term__bar i { width: 10px; height: 10px; border-radius: 50%; background: rgba(242, 239, 230, 0.2); }
+.term__bar i:nth-child(1) { background: #e0563f; } .term__bar i:nth-child(2) { background: #e8b84b; } .term__bar i:nth-child(3) { background: var(--accent); }
+.term__title { margin-left: 0.6rem; color: var(--faint); font-size: 0.6rem; }
+.term__body { padding: 1.2rem 1.3rem; display: flex; flex-direction: column; gap: 0.55rem; font-size: clamp(0.78rem, 0.95vw, 0.88rem); line-height: 1.55; }
+.term__row { display: flex; gap: 0.6rem; align-items: baseline; }
+.term__prompt { color: var(--accent); }
+.term__type { color: var(--fg); }
+.term__type.is-caret::after { content: "▋"; color: var(--accent); margin-left: 1px; animation: termcaret 1s steps(1) infinite; }
+@keyframes termcaret { 50% { opacity: 0; } }
+.term__out { color: var(--muted); padding-left: 1.2rem; }
+.term__out b { color: var(--fg); font-weight: 500; }
+.term__ok b { color: var(--accent); }
+
 /* ── command palette (⌘K) ──────────────────────────────────────────────── */
 .nav__cmdk { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.06em; color: var(--fg);
   border: 1px solid var(--line); padding: 0.4rem 0.6rem; border-radius: 8px; transition: all 0.3s var(--ease); }
