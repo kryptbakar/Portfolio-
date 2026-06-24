@@ -137,6 +137,7 @@
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     let w, h, dpr, parts = [], raf = null, running = true, t = 0;
+    const mouse = { x: -1e5, y: -1e5 };
     const noise = (x, y, tt) =>
       Math.sin(x * 0.0016 + tt) * Math.cos(y * 0.0016 - tt * 0.8) + Math.sin((x + y) * 0.0011 + tt * 0.5);
     const mk = () => ({ x: Math.random() * w, y: Math.random() * h, a: Math.random() < 0.12 });
@@ -156,13 +157,24 @@
       t += 0.0008;
       ctx.fillStyle = "rgba(10,10,12,0.10)";
       ctx.fillRect(0, 0, w, h);
+      const mr = 170 * dpr, mr2 = mr * mr; // cursor influence radius
       for (const p of parts) {
-        const ang = noise(p.x, p.y, t) * Math.PI;
-        const nx = p.x + Math.cos(ang) * 1.4 * dpr;
-        const ny = p.y + Math.sin(ang) * 1.4 * dpr;
+        let ang = noise(p.x, p.y, t) * Math.PI, near = 0;
+        if (mouse.x > -1e4) {
+          const ddx = p.x - mouse.x, ddy = p.y - mouse.y, d2 = ddx * ddx + ddy * ddy;
+          if (d2 < mr2) {
+            near = 1 - Math.sqrt(d2) / mr;
+            const swirl = Math.atan2(ddy, ddx) + Math.PI / 2; // tangential -> vortex
+            ang = ang * (1 - near) + swirl * near;
+          }
+        }
+        const sp = (1.4 + near * 2.4) * dpr;
+        const nx = p.x + Math.cos(ang) * sp;
+        const ny = p.y + Math.sin(ang) * sp;
         ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny);
-        ctx.strokeStyle = p.a ? "rgba(201,242,78,0.34)" : "rgba(242,239,230,0.11)";
-        ctx.lineWidth = (p.a ? 1.1 : 0.8) * dpr;
+        ctx.strokeStyle = near > 0.15 ? `rgba(201,242,78,${(0.18 + near * 0.55).toFixed(3)})`
+          : p.a ? "rgba(201,242,78,0.34)" : "rgba(242,239,230,0.11)";
+        ctx.lineWidth = (near > 0.15 ? 1 + near : p.a ? 1.1 : 0.8) * dpr;
         ctx.stroke();
         p.x = nx; p.y = ny;
         if (p.x < 0 || p.x > w || p.y < 0 || p.y > h) { p.x = Math.random() * w; p.y = Math.random() * h; }
@@ -172,6 +184,10 @@
     resize();
     frame();
     window.addEventListener("resize", debounce(resize, 200));
+    if (fine) window.addEventListener("mousemove", (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = (e.clientX - r.left) * dpr; mouse.y = (e.clientY - r.top) * dpr;
+    }, { passive: true });
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(([e]) => {
         running = e.isIntersecting;
@@ -918,7 +934,7 @@
     tl.to(loader, { yPercent: -100, duration: 1.0, ease: "power4.inOut" }, "-=0.05");
   }
 
-  /* ── boot ────────────────────────────────────────────── */
+  /* ── boot ──────────────────────────────────────────── */
   function start() {
     document.body.classList.remove("is-loading");
     initSmooth();
