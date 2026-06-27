@@ -85,9 +85,9 @@
     /* keep the custom cursor ring off the hero / portrait — use the native cursor here */
     html.has-cursor #hero, html.has-cursor #hero * { cursor: auto !important; }
 
-    @media (max-width: 1100px) { .hero__lead { max-width: 78%; }
-      .hero__portrait { height: 60vh; opacity: 0.5; } }
-    @media (max-width: 768px) { .hero__portrait { height: 50vh; opacity: 0.3; } .hero__lead { max-width: 100%; } }
+    @media (max-width: 1100px) { .hero__lead { max-width: min(68%, 52ch); }
+      .hero__portrait { height: min(72vh, 780px); opacity: 0.78; } }
+    @media (max-width: 768px) { .hero__portrait { height: min(70vh, 720px); opacity: 0.62; } .hero__lead { max-width: min(72%, 52ch); } }
   </style>
 </head>
 <body>

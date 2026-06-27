@@ -287,7 +287,7 @@
   /* ── skills knowledge graph (interactive canvas) ────────────────── */
   function initSkillsGraph() {
     const section = document.getElementById("skills");
-    if (!section || reduced || !fine) return;
+    if (!section || reduced) return;
     const canvas = section.querySelector(".skills__canvas");
     const cells = $$(".skills__cell", section);
     if (!canvas || !cells.length) return;
@@ -523,7 +523,7 @@
     const counter = $("#workCounter"), progress = $("#workProgress");
     const panels = $$(".panel", track);
     const total = panels.length;
-    const mm = matchMedia("(min-width: 1024px) and (pointer: fine)");
+    const mm = matchMedia("(min-width: 1px)");
     let tween = null, extra = [];
 
     const dist = () => Math.max(0, track.scrollWidth - innerWidth);
@@ -541,7 +541,7 @@
     function build() {
       teardown();
 
-      // mobile / tablet: simple vertical reveals
+      // fallback: simple vertical reveals
       if (!mm.matches) {
         panels.forEach((p) => {
           const body = p.querySelector(".panel__body");

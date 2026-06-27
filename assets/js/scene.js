@@ -3,7 +3,7 @@
    ----------------------------------------------------------------------------
    A curved video-wall carousel in a wireframe-grid space, with bloom +
    chromatic aberration. Progressive enhancement: mounts only on capable
-   desktops; any failure quietly falls back to the CSS/GSAP showcase.
+   capable devices; any failure quietly falls back to the CSS/GSAP showcase.
    Scroll position is fed in from main.js via the "work:progress" event.
    ========================================================================= */
 
@@ -11,8 +11,7 @@
   "use strict";
 
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const desktop = matchMedia("(min-width: 1024px) and (pointer: fine)").matches;
-  if (reduced || !desktop || !window.gsap) return;
+  if (reduced || !window.gsap) return;
 
   // WebGL support probe
   try {
@@ -199,6 +198,14 @@
     // screens
     const geo = curved(7.2, 4.05, 7.2);
     const group = new THREE.Group(); scene.add(group);
+    function fitViewport() {
+      const portrait = innerWidth / innerHeight < 0.72;
+      const compact = innerWidth < 900;
+      group.scale.setScalar(portrait ? 0.52 : compact ? 0.78 : 1);
+      camera.fov = portrait ? 58 : 45;
+      camera.position.z = portrait ? 11.5 : 9;
+      camera.updateProjectionMatrix();
+    }
     const screens = projects.map((p, idx) => {
       let map = null;
       try {
@@ -352,10 +359,12 @@
     // resize
     window.addEventListener("resize", () => {
       camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+      fitViewport();
       renderer.setSize(innerWidth, innerHeight);
       composer && composer.setSize(innerWidth, innerHeight);
     });
 
+    fitViewport();
     layout(0); updateOverlay();
   }
 })();
